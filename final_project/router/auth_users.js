@@ -32,25 +32,41 @@ regd_users.post("/login", (req,res) => {
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
     const { review } = req.body;
-    const { isbn } = req.params;
-    const username = req.username;
+    const { id } = req.params; // Change isbn to id
+    const username = req.username; // Assume this is obtained from JWT or session
 
     // Validate input
     if (!review) {
         return res.status(400).json({ message: "Review is required" });
     }
 
-    // Check if the review exists for this ISBN
-    const existingReviewIndex = reviews.findIndex(r => r.isbn === isbn && r.username === username);
-    if (existingReviewIndex !== -1) {
+    // Check if the book exists by ID
+    if (!books[id]) {
+        return res.status(404).json({ message: "Book not found" });
+    }
+
+    // Check if the review exists for this book ID
+    const existingReview = books[id].reviews[username]; // Check if a review exists for the current user
+    if (existingReview) {
         // Modify existing review
-        reviews[existingReviewIndex].review = review;
+        books[id].reviews[username] = review; // Update the review
         return res.status(200).json({ message: "Review updated successfully" });
     }
 
     // Add new review
-    reviews.push({ isbn, username, review });
+    books[id].reviews[username] = review; // Add the new review
     return res.status(201).json({ message: "Review added successfully" });
+});
+
+//Deletes existing review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const { isbn } = req.params;
+    const username = req.username; 
+
+    // Filter out the review based on ISBN and username
+    reviews = reviews.filter(review => !(review.isbn === isbn && review.username === username));
+
+    return res.status(200).json({ message: "Review deleted successfully" });
 });
 
 module.exports.authenticated = regd_users;
