@@ -5,14 +5,6 @@ const regd_users = express.Router();
 
 let users = [];
 
-const isValid = (username)=>{ //returns boolean
-//write code to check is the username is valid
-}
-
-const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
-}
-
 //only registered users can login
 regd_users.post("/login", (req,res) => {
     const { username, password } = req.body;
@@ -31,44 +23,38 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    const { review } = req.body;
-    const { id } = req.params; // Change isbn to id
-    const username = req.username; // Assume this is obtained from JWT or session
+    const { isbn } = req.params; // Retrieve the ISBN from request parameters
+    const { review } = req.body; // Extract the review from the request body
+    const username = req.username; // Get the username of the authenticated user
 
-    // Validate input
+    // Check if the book exists
+    const book = books[isbn];
+    if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+    }
+
+    // Check if review is provided
     if (!review) {
         return res.status(400).json({ message: "Review is required" });
     }
 
-    // Check if the book exists by ID
-    if (!books[id]) {
-        return res.status(404).json({ message: "Book not found" });
+    // Add the review to the book
+    if (!book.reviews[username]) {
+        book.reviews[username] = []; // Initialize reviews for the user if not already present
     }
+    book.reviews[username].push(review); // Add the review
 
-    // Check if the review exists for this book ID
-    const existingReview = books[id].reviews[username]; // Check if a review exists for the current user
-    if (existingReview) {
-        // Modify existing review
-        books[id].reviews[username] = review; // Update the review
-        return res.status(200).json({ message: "Review updated successfully" });
-    }
-
-    // Add new review
-    books[id].reviews[username] = review; // Add the new review
-    return res.status(201).json({ message: "Review added successfully" });
+    return res.status(200).json({ message: "Review added successfully", book });
 });
 
 //Deletes existing review
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     const { isbn } = req.params;
     const username = req.username; 
-
-    // Filter out the review based on ISBN and username
     reviews = reviews.filter(review => !(review.isbn === isbn && review.username === username));
 
     return res.status(200).json({ message: "Review deleted successfully" });
 });
 
 module.exports.authenticated = regd_users;
-module.exports.isValid = isValid;
 module.exports.users = users;
